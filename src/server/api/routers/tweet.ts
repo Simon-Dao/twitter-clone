@@ -9,7 +9,8 @@ import {
 
 export const tweetRouter = createTRPCRouter({
 
-  infiniteFeed: publicProcedure.input(
+  infiniteFeed: publicProcedure
+    .input(
     z.object(
     {
       limit: z.number().optional(),
@@ -38,12 +39,6 @@ export const tweetRouter = createTRPCRouter({
               }
         }})
 
-        const test = await ctx.prisma.user.findMany({
-
-        })
-
-        console.log(test)
-
         let nextCursor: typeof cursor | undefined
 
         if(data.length > limit) {
@@ -68,11 +63,28 @@ export const tweetRouter = createTRPCRouter({
         }), nextCursor}
       }
     ),
- 
-    create: protectedProcedure
-      .input(z.object({ content: z.string() }))
-      .mutation(async ( {input: {content}, ctx}) => {
-        //making a call to the database
-        return await ctx.prisma.tweet.create({ data: {content, userId: ctx.session.user.id } })
-      })    
+  create: protectedProcedure
+    .input(z.object({ content: z.string() }))
+    .mutation(async ( {input: {content}, ctx}) => {
+      //making a call to the database
+      return await ctx.prisma.tweet.create({ data: {content, userId: ctx.session.user.id } })
+    }),  
+  toggleLike: protectedProcedure
+    .input(z.object({ id: z.string()}))
+    .mutation(async ({input: {id},ctx}) => {
+
+      const data = {tweetId: id, userId: ctx.session.user.id}
+
+      const existingLike = await ctx.prisma.like.findUnique({
+        where: {userId_tweetId: data}
+      })
+
+      if(existingLike == null) {
+        await ctx.prisma.like.create({data})
+        return {addedLike: true}
+      } else {
+        await ctx.prisma.like.delete({where: {userId_tweetId: data}})
+        return {addedLike: false}
+      } 
+    }) 
 });

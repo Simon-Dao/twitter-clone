@@ -30,7 +30,6 @@ function Form() {
     
     {
         onSuccess: newTweet => {
-            console.log(newTweet)
             setInputValue('')
         }})
         
